@@ -1,0 +1,79 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 80%;
+    margin: auto;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #2a9d8f;
+}
+
+form, .popup {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+input, button {
+    padding: 10px;
+    font-size: 16px;
+}
+
+button {
+    background-color: #2a9d8f;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+#listingsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    width: 300px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border: 1px solid #0078d4;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.popup.hidden {
+    display: none;
+}
+
+.edit-button{
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    background-color: #ffa500;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+
+}

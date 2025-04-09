@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zillower</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Welcome to Zillower</h1>
+    <form id="addListingForm">
+        <input type="text" name="url" placeholder="Zillow URL" required>
+        <input type="number" name="roommates" placeholder="Number of Roommates" required>
+        <input type="number" name="distance_rating" placeholder="Distance Rating (1-10)" required>
+        <input type="number" name="overall_rating" placeholder="Overall Rating (1-10)" required>
+        <button type="submit">Add Listing</button>
+    </form>
+    <div id="listingsContainer"></div>
+
+    <!-- Edit Popup -->
+    <div id="editPopup" class="popup hidden">
+        <form id="editListingForm">
+            <input type="hidden" name="id">
+            <input type="text" name="address" placeholder="Address">
+            <input type="number" name="price" placeholder="Rent">
+            <input type="number" name="square_footage" placeholder="Square Footage">
+            <input type="number" name="bedrooms" placeholder="Bedrooms">
+            <input type="number" name="bathrooms" placeholder="Bathrooms">
+            <input type="text" name="date_available" placeholder="Date Available">
+            <input type="number" name="distance_rating" placeholder="Distance Rating (1-10)">
+            <input type="number" name="overall_rating" placeholder="Overall Rating (1-10)">
+            <button type="submit">Save</button>
+            <button id="deleteButton" type="button">Delete</button>
+        </form>
+    </div>
+    
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
