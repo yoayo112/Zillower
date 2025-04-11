@@ -20,7 +20,8 @@ app = Flask(
 LISTINGS_FILE = "listings.json"
 
 #Google API vars
-GOOGLE_MAPS_API_KEY = "AIzaSyB4gpoA11eX8IPBctpBLb9WyTQ2QR_LXSs" 
+GOOGLE_MAPS_API_KEY = None # put your own API key for google cloud/ google maps distance matrix API here
+with open("googleapi.txt","r") as file: GOOGLE_MAPS_API_KEY = file.read() # Or make a file called "googleapi.txt" to put it in so that its not published.
 ORIGIN_ADDRESS = "120 1/2 W Laurel St A, Fort Collins, CO 80524"
 
 # Function to load saved listings
