@@ -1,79 +1,297 @@
+/* General Styles */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f9;
-    color: #333;
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #1a1a2e;
+    color: #e0f7fa;
     margin: 0;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
+a {
+    text-decoration:dotted; /* Removes the default underline */
+    color: #007BFF; /* Sets the text color */
+    font-weight: bold; /* Makes the text bold */
+    transition: color 0.3s ease-in-out; /* Smooth color transition */
+}
+
+/* Change color on hover */
+a:hover {
+    color: #0056b3; /* Darker shade for hover effect */
+    text-decoration: underline; /* Adds underline when hovered */
+}
+
+/* Change color when clicked */
+a:active {
+    color: #ff4500; /* Sets a distinct color when clicked */
+}
+
+/* Change appearance for visited links */
+a:visited {
+    color: #6c757d; /* Grayish color for visited links */
+}
+
+/* Container for Forms & Listings */
 .container {
     width: 80%;
     margin: auto;
     padding: 20px;
 }
 
-h1 {
-    text-align: center;
-    color: #2a9d8f;
+/* Soft Input Container */
+.input-container {
+    width: 60%;
+    margin: auto;
+    padding: 20px;
+    background: #22234b;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
+/* Typography */
+h1 {
+    text-align: center;
+    color: #77b5f3;
+    font-size: 2em;
+}
+h3 {
+    font-size: 20px;
+    font-weight: bold;
+    color: #1b9458; /* Dark gray for good readability */
+    text-transform: uppercase;
+    letter-spacing: 1px; /* Slight spacing for emphasis */
+    border-bottom: 3px solid #1e2421; /* Adds a bold underline effect */
+    padding: 5px;
+    transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+h3:hover {
+    color: #00e2aa; /* Slight color shift on hover */
+    border-color: #292b2e; /* Darker shade for hover */
+}
+
+h4 {
+    text-align: center;
+    color: #849997;
+}
+
+/* Forms & Popup */
 form, .popup {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 20px;
 }
 
-input, button {
-    padding: 10px;
+/* Inputs - Soft Styling */
+input {
+    padding: 12px;
     font-size: 16px;
-}
-
-button {
-    background-color: #2a9d8f;
-    color: #fff;
     border: none;
-    cursor: pointer;
+    border-radius: 10px;
+    background: #2a2d53;
+    color: #e0f7fa;
+    outline: none;
+    box-shadow: inset 0px 2px 5px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease-in-out;
 }
 
+input:focus {
+    background: #3a3f73;
+    box-shadow: 0px 0px 8px rgba(119, 181, 243, 0.8);
+}
+
+/* Specific Input Type */
+input[type="number"] {
+    width: 80px;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* Buttons */
+button {
+    padding: 12px;
+    font-size: 16px;
+    background: linear-gradient(135deg, #3f6dbf, #77b5f3);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+button:hover {
+    background: linear-gradient(135deg, #77b5f3, #3f6dbf);
+    box-shadow: 0px 5px 10px rgba(119, 181, 243, 0.4);
+}
+
+/* Listings Container */
 #listingsContainer {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
+    padding: 20px;
 }
 
+/* Listing Card */
 .card {
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 15px;
+    background: #292d4f;
+    border: 1px solid #3a3f73;
+    border-radius: 15px;
+    padding: 20px;
     width: 300px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease-in-out;
 }
 
+.card:hover {
+    transform: scale(1.05);
+}
+
+/* Popup Window */
 .popup {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
-    border: 1px solid #0078d4;
-    padding: 20px;
-    border-radius: 10px;
+    background: #22234b;
+    border: 2px solid #77b5f3;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0px 8px 20px rgba(119, 181, 243, 0.4);
 }
 
+/* Hidden Popup */
 .popup.hidden {
     display: none;
 }
 
-.edit-button{
+/* Edit Button */
+.edit-button {
     top: 10px;
     right: 10px;
-    padding: 5px 10px;
-    background-color: #ffa500;
+    padding: 6px 12px;
+    background: #77b5f3;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     color: white;
     cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
 
+.edit-button:hover {
+    background: #3f6dbf;
+    box-shadow: 0px 5px 10px rgba(119, 181, 243, 0.4);
+}
+
+/* 🛠️ Settings Button */
+#settingsButton {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 999;
+}
+
+.settings-icon {
+    width: 45px;
+    height: 45px;
+    opacity: 0.8;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.settings-icon:hover {
+    opacity: 1;
+    transform: rotate(20deg);
+}
+
+/* 🎛️ Settings Menu Overlay */
+#settingsOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85); /* Darker dim effect */
+    backdrop-filter: blur(6px); /* Glass-like blur effect */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#settingsOverlay.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* 🏗️ Settings Panel */
+.settings-panel {
+    background: linear-gradient(135deg, #242424, #343a40); /* Dark-themed gradient */
+    color: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    width: 350px;
+    max-width: 90%;
+    text-align: center;
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* ❌ Close Button */
+.close-settings {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.close-settings:hover {
+    color: #ff5252;
+}
+
+/* 💾 Unique Save Button */
+.save-settings {
+    background: #17a2b8; /* Unique cyan-blue */
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: background 0.3s ease;
+}
+
+.save-settings:hover {
+    background: #138496;
+}
+
+/* 🎭 Smooth Fade-In Effect */
+@keyframes fadeIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+#listingsContainer {
+    display: flex;
+    flex-wrap: wrap; /* Ensures new rows start after 5 cards */
+    gap: 15px; /* Adds spacing between cards */
+    justify-content: center;
 }
