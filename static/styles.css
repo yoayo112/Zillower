@@ -44,6 +44,7 @@ a:visited {
 .input-container {
     width: 60%;
     margin: auto;
+    margin-top:10px;
     padding: 20px;
     background: #22234b;
     border-radius: 15px;
@@ -59,7 +60,7 @@ h1 {
 h3 {
     font-size: 20px;
     font-weight: bold;
-    color: #1b9458; /* Dark gray for good readability */
+    color: #1b9458;
     text-transform: uppercase;
     letter-spacing: 1px; /* Slight spacing for emphasis */
     border-bottom: 3px solid #1e2421; /* Adds a bold underline effect */
@@ -110,6 +111,45 @@ input[type="number"] {
     font-weight: bold;
 }
 
+hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(159, 197, 233, 0.507), transparent);
+    margin: 20px 0;
+}
+/* Styled Select Dropdown */
+select {
+    width: 90%;
+    padding: 12px;
+    font-size: 16px;
+    border: none;
+    border-radius: 10px;
+    background: #2a2d53;
+    color: #e0f7fa;
+    outline: none;
+    box-shadow: inset 0px 2px 5px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+/* Hover effect */
+select:hover {
+    background: #3a3f73;
+}
+
+/* Focus effect */
+select:focus {
+    background: #3a3f73;
+    box-shadow: 0px 0px 8px rgba(119, 181, 243, 0.8);
+}
+
+/* Option Styling */
+option {
+    background: #22234b;
+    color: #e0f7fa;
+    padding: 10px;
+}
+
 /* Buttons */
 button {
     padding: 12px;
@@ -150,6 +190,38 @@ button:hover {
     transform: scale(1.05);
 }
 
+.green-check {
+    border: 1px solid #1c70dd;
+    border-radius: 15px;
+    padding: 5px;
+    margin: 5px;
+}
+
+.group-circle {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-top: 10px;
+    cursor: pointer;
+    border: 2px solid #ccc;
+}
+
+.group-none { background-color: transparent; border: 2px solid #ccc; }
+.group-red { background-color: rgb(117, 15, 15); accent-color: red;}
+.group-blue { background-color: rgb(8, 8, 117); }
+.group-green { background-color: rgb(10, 95, 10); }
+.group-yellow { background-color: rgb(175, 130, 7); }
+.group-purple { background-color: purple; }
+
+.group-none:checked { background-color: transparent; border: 2px solid #ccc; }
+.group-red:checked { background-color: rgb(219, 46, 46);}
+.group-blue:checked { background-color: rgb(18, 107, 223); }
+.group-green:checked { background-color: rgb(28, 182, 28); }
+.group-yellow:checked { background-color: rgb(224, 183, 69); }
+.group-purple:checked { background-color: rgb(196, 25, 196); }
+
 /* Popup Window */
 .popup {
     position: fixed;
@@ -183,6 +255,25 @@ button:hover {
 
 .edit-button:hover {
     background: #3f6dbf;
+    box-shadow: 0px 5px 10px rgba(119, 181, 243, 0.4);
+}
+
+/* Edit Button */
+.delete-button {
+    top: 10px;
+    right: 10px;
+    padding: 6px 12px;
+    margin-left: 25px;
+    background: #550832;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.delete-button:hover {
+    background: #2e0455;
     box-shadow: 0px 5px 10px rgba(119, 181, 243, 0.4);
 }
 
@@ -238,23 +329,18 @@ button:hover {
     padding: 25px;
     border-radius: 12px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    width: 350px;
+    width: 50%;
     max-width: 90%;
     text-align: center;
     animation: fadeIn 0.3s ease-out;
 }
 
-/* ❌ Close Button */
-.close-settings {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
-    border: none;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    transition: color 0.2s ease;
+.weight-settings{
+    padding-bottom:10px;
+    display:flex;
+    border: 1px groove;
+    border-color:#849997;
+    border-radius: 5px;
 }
 
 .close-settings:hover {

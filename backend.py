@@ -18,6 +18,13 @@ app = Flask(
 
 # File for saving listings
 LISTINGS_FILE = "listings.json"
+SCORE_WEIGHTS ={
+    "rent": 0.3,
+    "sqft":0.2,
+    "bedrooms":0.2,
+    "bathrooms":0.2,
+    "distance":0.1
+}
 
 #Google API vars
 GOOGLE_MAPS_API_KEY = None # put your own API key for google cloud/ google maps distance matrix API here
@@ -39,7 +46,12 @@ def currency_to_float(currency_string):
             return float(cleaned_string)
         except ValueError:
             return None  # Return None instead of 0
-    return None  # Return None for invalid inputs
+    elif isinstance(currency_string,int):
+        return float(currency_string)
+    elif isinstance(currency_string, float):
+        return currency_string
+    else:
+        return None  # Return None for invalid inputs
 
 def assign_scores(listings):
     if len(listings) == 1:
@@ -47,7 +59,7 @@ def assign_scores(listings):
         return listings  # Return immediately for a single listing
     
     # Extract values for normalization
-    rents = [currency_to_float(listing["price"]) for listing in listings if currency_to_float(listing["price"]) is not None and listing["price"] is not None]
+    price = [currency_to_float(listing["cost_per_roommate"]) for listing in listings if currency_to_float(listing["cost_per_roommate"]) is not None]
     square_feet = [listing["square_footage"] for listing in listings if isinstance(listing["square_footage"], int)]
     bedrooms = [listing["bedrooms"] for listing in listings if isinstance(listing["bedrooms"], int)]
     bathrooms = [listing["bathrooms"] for listing in listings if isinstance(listing["bathrooms"], float)]
@@ -56,51 +68,66 @@ def assign_scores(listings):
     # Compute the average square footage if needed
     avg_sqft = sum(square_feet) // len(square_feet) if square_feet else 0
 
-    # Helper function for normalization
+    # Normalization with proportional scaling
     def normalize(value, min_val, max_val, reverse=False):
         if min_val == max_val:
             return 50  # Neutral score when all values are the same
-        score = (value - min_val) / (max_val - min_val) * 100
-        return 100 - score if reverse else score  # Reverse scales lower-better criteria
+        score = 100 * (value - min_val) / (max_val - min_val)
+        return 100 - score if reverse else score
 
-    # Get min/max values
-    rent_min, rent_max = min(rents, default=0), max(rents, default=1)
+    # Get min/max values for normalization
+    rent_min, rent_max = min(price, default=0), max(price, default=1)
     sqft_min, sqft_max = min(square_feet, default=0), max(square_feet, default=1)
     bed_min, bed_max = min(bedrooms, default=0), max(bedrooms, default=1)
     bath_min, bath_max = min(bathrooms, default=0), max(bathrooms, default=1)
     dist_min, dist_max = min(distances, default=0), max(distances, default=1)
 
-    # Assign scores to listings
+    # Assign scores proportionally with weights applied
     for listing in listings:
-        # Ensure square footage is valid, else assign average
         if not isinstance(listing["square_footage"], int):
-            listing["square_footage"] = avg_sqft
+            listing["square_footage"] = avg_sqft  # Assign average if missing
 
-        listing["rent_score"] = normalize(currency_to_float(listing["price"]), rent_min, rent_max, reverse=True) if currency_to_float(listing["price"]) is not None and listing["price"] is not None else 0
-        listing["sqft_score"] = normalize(listing["square_footage"], sqft_min, sqft_max) if listing["square_footage"] > 0 else 0
-        listing["bedrooms_score"] = normalize(listing["bedrooms"], bed_min, bed_max) if isinstance(listing["bedrooms"], int) else 0
-        listing["bathrooms_score"] = normalize(listing["bathrooms"], bath_min, bath_max) if isinstance(listing["bathrooms"], int) else 0
-        listing["distance_score"] = normalize(float(listing["distance"].split()[0]), dist_min, dist_max, reverse=True) if listing["distance"] not in ["N/A", None] else 0
+        rent_score = normalize(currency_to_float(listing["cost_per_roommate"]), rent_min, rent_max, reverse=True) if currency_to_float(listing["cost_per_roommate"]) is not None else 0
+        rent_score *= SCORE_WEIGHTS["rent"]
+        listing["rent_score"] = rent_score
+
+        sqft_score = normalize(listing["square_footage"], sqft_min, sqft_max) if listing["square_footage"] > 0 else 0
+        sqft_score *= SCORE_WEIGHTS["sqft"]
+        listing["sqft_score"] = sqft_score
+
+        bedrooms_score = normalize(int(listing["bedrooms"]), bed_min, bed_max)
+        bedrooms_score *= SCORE_WEIGHTS["bedrooms"]
+        listing["bedrooms_score"] = bedrooms_score
+
+        bathrooms_score = normalize(int(listing["bathrooms"]), bath_min, bath_max)
+        bathrooms_score *= SCORE_WEIGHTS["bathrooms"]
+        listing["bathrooms_score"] = bathrooms_score
+
+        distance_score = normalize(float(listing["distance"].split()[0]), dist_min, dist_max, reverse=True) if listing["distance"] not in ["N/A", None] else 0
+        distance_score *= SCORE_WEIGHTS["distance"]
+        listing["distance_score"] = distance_score
 
         # Final weighted score
         listing["score"] = round((
-            listing["rent_score"] * 0.3 +
-            listing["sqft_score"] * 0.2 +
-            listing["bedrooms_score"] * 0.2 +
-            listing["bathrooms_score"] * 0.2 +
-            listing["distance_score"] * 0.1
-        ),2)
+            listing["rent_score"] +
+            listing["sqft_score"] +
+            listing["bedrooms_score"] +
+            listing["bathrooms_score"] +
+            listing["distance_score"]
+        ), 2)
 
     return listings
-
-# Load saved listings on startup
-listings = load_listings()
-listings = assign_scores(listings)
 
 # Function to save listings
 def save_listings():
     with open(LISTINGS_FILE, "w") as file:
+        global listings
         json.dump(listings, file, indent=4)
+
+# Load saved listings on startup
+listings = load_listings()
+listings = assign_scores(listings)
+save_listings()
 
 def get_distance(destination_address):
     url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={ORIGIN_ADDRESS}&destinations={destination_address}&units=imperial&key={GOOGLE_MAPS_API_KEY}"
@@ -192,15 +219,26 @@ def scrape_zillow(url):
 def home():
     return render_template("UI.html")
 
-@app.route("/update_origin", methods=["POST"])
+@app.route("/update_settings", methods=["POST"])
 def update_origin():
     data = request.json
-    origin_address = data.get("originAddress")
+    address = data.get("address")
 
-    if origin_address:
+    if address:
         global ORIGIN_ADDRESS 
-        ORIGIN_ADDRESS = origin_address
-        return jsonify({"success": True, "message": "Origin address updated!"})
+        ORIGIN_ADDRESS = address
+        SCORE_WEIGHTS["rent"] = float(data.get("rent"))
+        SCORE_WEIGHTS["sqft"] = float(data.get("sqft"))
+        SCORE_WEIGHTS["bedrooms"] = float(data.get("beds"))
+        SCORE_WEIGHTS["bathrooms"] = float(data.get("baths"))
+        SCORE_WEIGHTS["distance"] = float(data.get("dist"))
+        print(f"dist: ${SCORE_WEIGHTS["distance"]}")
+        global listings
+        listings = load_listings()
+        listings = assign_scores(listings)
+        save_listings()
+
+        return jsonify({"success": True, "message": "Settings updated!"})
     
     return jsonify({"success": False, "error": "Invalid address"})
 
@@ -243,6 +281,7 @@ def add_listing():
             "applied": data.get("applied", False),
             "id": timestamp,
             "url":url,
+            "group":"none",
         })
 
         # Add to the global listings variable
@@ -259,10 +298,52 @@ def add_listing():
         print("Failed to add. Listing already exists.")
         return jsonify({"success": False})
 
+@app.route("/contacted", methods=["POST"])
+def contacted():
+    data = request.json
+    listing_id = int(data.get("id")) if data.get("id") else None
+    checked = data.get("selected") if data.get("selected") else False
+    global listings
+    for listing in listings:
+        stored_id = int(listing.get("id"))  # Ensure comparison uses integers
+        print(f"Checking Listing ID {stored_id} == {listing_id}")
+
+        if stored_id == listing_id:
+            listing["contacted"] = checked
+            save_listings()
+            return jsonify({"success": True, "listing": listing})
+        
+@app.route("/applied", methods=["POST"])
+def applied():
+    data = request.json
+    listing_id = int(data.get("id")) if data.get("id") else None
+    checked = data.get("selected") if data.get("selected") else False
+    global listings
+    for listing in listings:
+        stored_id = int(listing.get("id"))  # Ensure comparison uses integers
+        print(f"Checking Listing ID {stored_id} == {listing_id}")
+
+        if stored_id == listing_id:
+            listing["applied"] = checked
+            save_listings()
+            return jsonify({"success": True, "listing": listing})
+
+@app.route("/update_group", methods=["POST"])
+def update_group():
+    data = request.json
+    listing = next((l for l in listings if l["id"] == data["id"]), None)
+    
+    if listing:
+        listing["group"] = data["group"]
+        return jsonify({"success": True, "listing": listing})
+    
+    return jsonify({"success": False, "message": "Listing not found"}), 404
+
 @app.route("/edit_listing", methods=["POST"])
 def edit_listing():
     data = request.json
     listing_id = int(data.get("id")) if data.get("id") else None  # Convert to int safely
+    global listings
 
     for listing in listings:
         stored_id = int(listing.get("id"))  # Ensure comparison uses integers
@@ -270,6 +351,7 @@ def edit_listing():
 
         if stored_id == listing_id:
             listing.update(data)
+            assign_scores(listings)
             save_listings()
             return jsonify({"success": True, "listing": listing})
 
@@ -279,15 +361,62 @@ def edit_listing():
 def delete_listing():
     data = request.json
     listing_id = data.get("id")
+
     global listings
-    listings = [listing for listing in listings if listing.get("id") != listing_id]
-    save_listings()
-    return jsonify({"success": True, "id":listing_id})
+    temp_listings = []
+
+    print(f"Attempting to delete listing with ID: {listing_id}")
+
+    for listing in listings:
+        stored_id = listing.get("id")
+        if stored_id != listing_id:
+            print(f"Keeping listing: {stored_id}")
+            temp_listings.append(listing)
+        else:
+            print(f"Deleted listing: {stored_id}")
+
+    listings = temp_listings
+    print(f"listings: ${temp_listings}")
+
+    if listings:  # Prevent saving an empty list
+        save_listings()
+        assign_scores(listings)
+        return jsonify({"success": True, "id": listing_id})
+    
+    print("All listings removed—returning error.")
+    return jsonify({"success": False, "error": "No listings left after deletion!"})
 
 @app.route("/listings", methods=["GET"])
 def get_listings():
-    sort_by = request.args.get("sort_by", "price")
-    sorted_listings = sorted(listings, key=lambda x: x.get(sort_by, 0) if isinstance(x.get(sort_by, 0), (int, float)) else 0)
+    sort_by = request.args.get("sort_by", "price")  # Default to price
+    reverse_sort = False
+
+    if sort_by in {"square_footage", "score"}:
+        reverse_sort = True
+
+
+    def sort_key(listing):
+        value = listing.get(sort_by, 0)
+        if sort_by == "price" and isinstance(value, str):
+            try:
+                return currency_to_float(value)
+            except: 
+                return 0
+        if sort_by == "distance" and isinstance(value, str):
+            try:
+                return float(value.split()[0])  # Ensure numeric sorting
+            except ValueError:
+                return float("inf")  # Place invalid distances last
+        if isinstance(value, str) and sort_by == "date_available":
+            try:
+                return datetime.strptime(value, "%Y-%m-%d")  # Convert date string to datetime object
+            except ValueError:
+                return datetime.max  # Handle invalid dates by placing them last
+        return value if isinstance(value, (int, float)) else 0  # Default sorting fallback
+    
+    print("Before sorting:", [listing["distance"] for listing in listings])
+    sorted_listings = sorted(listings, key=sort_key, reverse=reverse_sort)
+    print("After sorting:", [listing["distance"] for listing in sorted_listings])
 
     return jsonify(sorted_listings)
 

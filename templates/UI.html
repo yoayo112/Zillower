@@ -29,6 +29,28 @@
             <button type="submit">Add Listing</button>
         </form>
     </div>
+    <div class="input-container">
+        <label>Sort By: 
+            <select id="sort">
+                <option value="price">Price</option>
+                <option value="square_footage">Square Footage</option>
+                <option value="distance">Distance</option>
+                <option value="score">Recommended Score</option>
+                <option value="overall_rating">Your Rating</option>
+                <option value="date_available">Date Available</option>
+            </select>
+        </label>
+        <hr>
+        <label>
+            Filter Group:
+            <input type="radio" name="group" class="group-circle group-none" value="none">
+            <input type="radio" name="group" class="group-circle group-red" value="red">
+            <input type="radio" name="group" class="group-circle group-blue" value="blue">
+            <input type="radio" name="group"class="group-circle group-green" value="green">
+            <input type="radio" name="group" class="group-circle group-yellow" value="yellow">
+            <input type="radio" name="group" class="group-circle group-purple" value="purple">
+        </label>
+    </div>
 
     <div id="listingsContainer"></div>
 
@@ -36,7 +58,7 @@
     <div id="editPopup" class="popup hidden">
         <div class="form-container">
             <form id="editListingForm">
-                <input type="hidden" name="id">
+                <input type="hidden" name="id" id="id">
 
                 <label for="address">Address:</label>
                 <input type="text" id="address" name="address" placeholder="Enter address">
@@ -60,7 +82,6 @@
                 <input type="number" id="overall_rating" name="overall_rating" placeholder="Rate overall experience">
 
                 <button type="submit">Save</button>
-                <button id="deleteButton" type="button">Delete</button>
             </form>
         </div>
     </div>
@@ -68,12 +89,23 @@
     <!-- Settings Overlay -->
     <div id="settingsOverlay">
         <div class="settings-panel">
-            <button id="closeSettings" class="close-settings">×</button>
             <h2>Settings</h2>
-
             <form id="settingsForm">
                 <label for="originAddress">Address of Origin Point:</label>
                 <input type="text" id="originAddress" name="originAddress" value="120 1/2 W Laurel St A, Fort Collins, CO 80524">
+                <label for="weights">Recommended Score Weights</label>
+                <div class ="weight-settings" id="weights">
+                    <label for="rent_weight">Rent weight</label>
+                    <input type="number" id="rent_weight"value=0.3 step=0.1>
+                    <label for="sqft_weight">Square Footage Weight</label>
+                    <input type="number" id="sqft_weight" value=0.2 step=0.1>
+                    <label for="bedrooms_weight">Bedrooms Weight</label>
+                    <input type="number" id="bedrooms_weight" value=0.2 step=0.1>
+                    <label for="bathrooms_weight">Bathrooms Weight</label>
+                    <input type="number" id="bathrooms_weight"value=0.2 step=0.1>
+                    <label for="distance_weight">Distance Weight</label>
+                    <input type="number" id="distance_weight" value=0.1 step=0.1>
+                </div>
 
                 <button type="submit" class="save-settings">Save</button>
             </form>
