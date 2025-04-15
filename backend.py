@@ -84,24 +84,29 @@ def assign_scores(listings):
 
     # Assign scores proportionally with weights applied
     for listing in listings:
+        print(f"---------------LISTING: ${listing['id']} ")
         if not isinstance(listing["square_footage"], int):
             listing["square_footage"] = avg_sqft  # Assign average if missing
 
         rent_score = normalize(currency_to_float(listing["cost_per_roommate"]), rent_min, rent_max, reverse=True) if currency_to_float(listing["cost_per_roommate"]) is not None else 0
         rent_score *= SCORE_WEIGHTS["rent"]
         listing["rent_score"] = rent_score
+        print(rent_score)
 
         sqft_score = normalize(listing["square_footage"], sqft_min, sqft_max) if listing["square_footage"] > 0 else 0
         sqft_score *= SCORE_WEIGHTS["sqft"]
         listing["sqft_score"] = sqft_score
+        print(sqft_score)
 
         bedrooms_score = normalize(int(listing["bedrooms"]), bed_min, bed_max)
         bedrooms_score *= SCORE_WEIGHTS["bedrooms"]
         listing["bedrooms_score"] = bedrooms_score
+        print(bedrooms_score)
 
-        bathrooms_score = normalize(int(listing["bathrooms"]), bath_min, bath_max)
+        bathrooms_score = normalize(float(listing["bathrooms"]), bath_min, bath_max)
         bathrooms_score *= SCORE_WEIGHTS["bathrooms"]
         listing["bathrooms_score"] = bathrooms_score
+        print(bathrooms_score)
 
         distance_score = normalize(float(listing["distance"].split()[0]), dist_min, dist_max, reverse=True) if listing["distance"] not in ["N/A", None] else 0
         distance_score *= SCORE_WEIGHTS["distance"]
@@ -152,7 +157,7 @@ def scrape_zillow(url):
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-
+    options.binary_location="E:\_Applications\Program Files\Google\Chrome\Application\chrome.exe"
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     driver.get(url)
 
@@ -232,7 +237,6 @@ def update_origin():
         SCORE_WEIGHTS["bedrooms"] = float(data.get("beds"))
         SCORE_WEIGHTS["bathrooms"] = float(data.get("baths"))
         SCORE_WEIGHTS["distance"] = float(data.get("dist"))
-        print(f"dist: ${SCORE_WEIGHTS["distance"]}")
         global listings
         listings = load_listings()
         listings = assign_scores(listings)
@@ -421,4 +425,4 @@ def get_listings():
     return jsonify(sorted_listings)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=8080, debug=True)
