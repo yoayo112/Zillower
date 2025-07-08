@@ -1,3 +1,9 @@
+
+
 # only thing is the google api key tbh
 
 googleapi.txt
+
+# Ignore the virtual environment 
+
+*/venv_311/
