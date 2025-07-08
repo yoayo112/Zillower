@@ -167,6 +167,16 @@ button:hover {
     box-shadow: 0px 5px 10px rgba(119, 181, 243, 0.4);
 }
 
+.toggle-button{
+    padding: 1px;
+    margin-left: 27em;
+    background: linear-gradient(135deg, #a0cbf51a, #5c89d62d);
+}
+.toggle-button:hover{
+    background: linear-gradient(135deg, #77b5f356, #3f6ebf46);
+    box-shadow: 0px 0px 6px rgba(119, 181, 243, 0.4);
+}
+
 /* Listings Container */
 #listingsContainer {
     display: flex;
@@ -187,7 +197,7 @@ button:hover {
 }
 
 .card:hover {
-    transform: scale(1.05);
+    transform: scale(1.2);
 }
 
 .green-check {

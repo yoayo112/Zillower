@@ -1,3 +1,8 @@
+<!--
+## Sky Vercauteren
+## Zillower
+## Updated 7/6/2025-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,43 +15,80 @@
     <h1>Zillower</h1>
     <h4>By SKY VERCAUTEREN</h4>
 
-        <!-- Settings Button -->
     <button id="settingsButton">
         <img src="/static/Settings.png" alt="Settings" class="settings-icon">
     </button>
-    
+
     <div class="input-container">
+        <h2>Add New Listing (Automated Scrape)</h2>
         <form id="addListingForm">
             <label for="url">Zillow URL:</label>
             <input type="text" id="url" name="url" placeholder="Enter Zillow URL" required>
 
-            <label for="roommates">Number of Roommates:</label>
-            <input type="number" id="roommates" name="roommates" placeholder="Enter number" required>
+            <label for="roommates">Number of Occupants:</label>
+            <input type="number" id="roommates" name="roommates" value="1" min="1" required>
+           
+            <label for="utility_estimate">Estimated Monthly Utilities (Optional, $):</label>
+            <input type="number" id="utility_estimate" name="utility_estimate" value="0" min="0">
 
             <label for="overall_rating">Overall Rating (1-10):</label>
-            <input type="number" id="overall_rating" name="overall_rating" placeholder="Rate overall experience" required>
+            <input type="number" id="overall_rating" name="overall_rating" value="5" min="1" max="10" required>
 
             <button type="submit">Add Listing</button>
+            <div class="message"></div>
         </form>
     </div>
+
+    <div class="input-container" id="manualInputContainer">
+        <div class="manual-header">
+            <h2>Add New Listing (Manual HTML Input)
+                <button id="toggleManualInput" class="toggle-button">▶</button>
+            </h2>
+        </div>
+        <div id="manualInputContent" style="display:none; flex-direction: column; gap:12px;">
+            <p>If automated scraping fails, manually paste the page source here:</p>
+
+            <textarea id="rawHtmlInput" rows="6" placeholder="Right-click on the Zillow page -> 'View Page Source' (or 'Inspect Element' -> Copy outerHTML of <html>) -> Paste here." required></textarea>
+
+            <label for="manualHtmlUrl">Original Zillow URL (for image/distance):</label>
+            <input type="text" id="manualHtmlUrl" placeholder="e.g., https://www.zillow.com/homedetails/..." required>
+
+            <label for="manualRoommates">Number of Occupants:</label>
+            <input type="number" id="manualRoommates" value="1" min="1" required>
+
+            <label for="manualUtilityEstimate">Estimated Monthly Utilities (Optional, $):</label>
+            <input type="number" id="manualUtilityEstimate" name="manualUtilityEstimate" value="0" min="0">
+
+            <label for="manualOverallRating">Overall Rating (1-10):</label>
+            <input type="number" id="manualOverallRating" value="5" min="1" max="10" required>
+
+            <button id="addManualListingBtn">Add Listing from HTML</button>
+            <div class="message"></div>
+        </div>
+    </div>
+
     <div class="input-container">
-        <label>Sort By: 
+        <label>Sort By:
             <select id="sort">
-                <option value="price">Price</option>
-                <option value="square_footage">Square Footage</option>
-                <option value="distance">Distance</option>
                 <option value="score">Recommended Score</option>
-                <option value="overall_rating">Your Rating</option>
-                <option value="date_available">Date Available</option>
+                <option value="price">Price (Low to High)</option>
+                <option value="square_footage">Square Footage (High to Low)</option>
+                <option value="distance">Distance (Low to High)</option>
+                <option value="overall_rating">Your Rating (High to Low)</option>
+                <option value="date_available">Date Available (Earliest)</option>
+                <option value="cost_per_sqft">Cost per SqFt (Low to High)</option>
+                <option value="cost_per_roommate">Cost per Occupant (Low to High)</option>
+                <option value="bedrooms">Bedrooms (High to Low)</option>
+                <option value="bathrooms">Bathrooms (High to Low)</option>
             </select>
         </label>
         <hr>
         <label>
             Filter Group:
-            <input type="radio" name="group" class="group-circle group-none" value="none">
+            <input type="radio" name="group" class="group-circle group-none" value="none" checked>
             <input type="radio" name="group" class="group-circle group-red" value="red">
             <input type="radio" name="group" class="group-circle group-blue" value="blue">
-            <input type="radio" name="group"class="group-circle group-green" value="green">
+            <input type="radio" name="group" class="group-circle group-green" value="green">
             <input type="radio" name="group" class="group-circle group-yellow" value="yellow">
             <input type="radio" name="group" class="group-circle group-purple" value="purple">
         </label>
@@ -54,39 +96,52 @@
 
     <div id="listingsContainer"></div>
 
-    <!-- Edit Popup -->
     <div id="editPopup" class="popup hidden">
         <div class="form-container">
+            <h3>Edit Listing</h3>
             <form id="editListingForm">
-                <input type="hidden" name="id" id="id">
+                <input type="hidden" name="id" id="editId">
 
-                <label for="address">Address:</label>
-                <input type="text" id="address" name="address" placeholder="Enter address">
+                <label for="editAddress">Address:</label>
+                <input type="text" id="editAddress" name="address" placeholder="Enter address">
 
-                <label for="price">Rent:</label>
-                <input type="number" id="price" name="price" placeholder="Enter rent amount">
+                <label for="editPrice">Rent:</label>
+                <input type="number" id="editPrice" name="price" placeholder="Enter rent amount">
 
-                <label for="square_footage">Square Footage:</label>
-                <input type="number" id="square_footage" name="square_footage" placeholder="Enter square footage">
+                <label for="editSquareFootage">Square Footage:</label>
+                <input type="number" id="editSquareFootage" name="square_footage" placeholder="Enter square footage">
 
-                <label for="bedrooms">Bedrooms:</label>
-                <input type="number" id="bedrooms" name="bedrooms" placeholder="Enter bedroom count">
+                <label for="editBedrooms">Bedrooms:</label>
+                <input type="number" id="editBedrooms" name="bedrooms" placeholder="Enter bedroom count">
 
-                <label for="bathrooms">Bathrooms:</label>
-                <input type="number" id="bathrooms" name="bathrooms" placeholder="Enter bathroom count">
+                <label for="editBathrooms">Bathrooms:</label>
+                <input type="number" id="editBathrooms" name="bathrooms" step="0.5" placeholder="Enter bathroom count">
 
-                <label for="date_available">Date Available:</label>
-                <input type="text" id="date_available" name="date_available" placeholder="Enter availability date">
+                <label for="editDateAvailable">Date Available:</label>
+                <input type="text" id="editDateAvailable" name="date_available" placeholder="Enter availability date">
 
-                <label for="overall_rating">Overall Rating (1-10):</label>
-                <input type="number" id="overall_rating" name="overall_rating" placeholder="Rate overall experience">
+                <label for="editOverallRating">Overall Rating (1-10):</label>
+                <input type="number" id="editOverallRating" name="overall_rating" min="1" max="10" placeholder="Rate overall experience">
 
-                <button type="submit">Save</button>
+                <label for="editRoommates">Number of Occupants:</label>
+                <input type="number" id="editRoommates" name="roommates" min="1" placeholder="Enter number of roommates">
+
+                <label for="editUtilityEstimate">Estimated Monthly Utilities (Optional, $):</label>
+                <input type="number" id="editUtilityEstimate" name="utility_estimate" value="0" min="0">
+
+                <!-- NEW IMAGE PASTE SECTION -->
+                <div class="image-paste-section">
+                    <h4>Add Image (from Clipboard)</h4>
+                    <button type="button" id="pasteImageBtn">Paste Image</button>
+                    <div id="pasteImageMessage" class="message"></div>
+                </div>
+                <!-- END NEW IMAGE PASTE SECTION -->
+
+                <button type="submit">Save Changes</button>
             </form>
         </div>
     </div>
 
-    <!-- Settings Overlay -->
     <div id="settingsOverlay">
         <div class="settings-panel">
             <h2>Settings</h2>
@@ -94,24 +149,27 @@
                 <label for="originAddress">Address of Origin Point:</label>
                 <input type="text" id="originAddress" name="originAddress" value="120 1/2 W Laurel St A, Fort Collins, CO 80524">
                 <label for="weights">Recommended Score Weights</label>
-                <div class ="weight-settings" id="weights">
+                <div class="weight-settings" id="weights">
                     <label for="rent_weight">Rent weight</label>
-                    <input type="number" id="rent_weight"value=0.3 step=0.1>
+                    <input type="number" id="rent_weight" value="0.3" step="0.1">
                     <label for="sqft_weight">Square Footage Weight</label>
-                    <input type="number" id="sqft_weight" value=0.2 step=0.1>
+                    <input type="number" id="sqft_weight" value="0.2" step="0.1">
                     <label for="bedrooms_weight">Bedrooms Weight</label>
-                    <input type="number" id="bedrooms_weight" value=0.2 step=0.1>
+                    <input type="number" id="bedrooms_weight" value="0.2" step="0.1">
                     <label for="bathrooms_weight">Bathrooms Weight</label>
-                    <input type="number" id="bathrooms_weight"value=0.2 step=0.1>
+                    <input type="number" id="bathrooms_weight" value="0.2" step="0.1">
                     <label for="distance_weight">Distance Weight</label>
-                    <input type="number" id="distance_weight" value=0.1 step=0.1>
+                    <input type="number" id="distance_weight" value="0.1" step="0.1">
                 </div>
 
                 <button type="submit" class="save-settings">Save</button>
+                <div class="message"></div>
             </form>
         </div>
     </div>
 
     <script src="/static/app.js"></script>
+    <script src="/static/utils.js"></script>
+    <script src="/static/ui.js"></script>
 </body>
 </html>

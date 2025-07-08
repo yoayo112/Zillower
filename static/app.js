@@ -1,339 +1,450 @@
+// Sky Vercauteren
+// Zillower
+// Updated July 2025
+
 document.addEventListener("DOMContentLoaded", () => {
-    // Function to fetch and display listings
-    function loadListings() {
-        fetch("/listings")
-            .then((response) => response.json())
-            .then((listings) => {
-                listingsContainer.innerHTML = ""; // Clear existing content
-                listings.forEach((listing) => addListingCard(listing)); // Render each listing
-            })
-            .catch((error) => {
-                console.error("Error loading listings:", error);
-            });
-    }
+    // DOM Elements (cache them for performance)
+    const listingsContainer = document.getElementById("listingsContainer");
+    const editPopup = document.getElementById("editPopup");
+    const editListingForm = document.getElementById("editListingForm");
 
-    document.getElementById("sort").addEventListener("change", () =>{
-        const sortBy = document.getElementById("sort").value; // Get selected value
-        fetch(`/listings?sort_by=${sortBy}`)
-            .then((response) => response.json())
-            .then((listings) => {
-                listingsContainer.innerHTML = ""; // Clear existing content
-                listings.forEach((listing) => addListingCard(listing)); // Render each listing
-            })
-            .catch((error) => {
-                console.error("Error loading listings:", error);
-            });
-    });
-    
+    // Get references to new manual input elements
+    const manualHtmlUrlInput = document.getElementById("manualHtmlUrl");
+    const manualHtmlInput = document.getElementById("rawHtmlInput");
+    const manualRoommatesInput = document.getElementById("manualRoommates");
+    const addManualListingBtn = document.getElementById("addManualListingBtn");
+    const manualOverallRatingInput = document.getElementById("manualOverallRating"); // Added this based on your HTML
+
+    // Collapsible elements
+    const toggleManualInputBtn = document.getElementById("toggleManualInput");
+    const manualInputContent = document.getElementById("manualInputContent");
+    const manualInputContainer = document.getElementById('manualInputContainer'); // Added for showMessage
+
+    // NEW Image Paste Elements
+    const pasteImageBtn = document.getElementById("pasteImageBtn");
+    const pasteImageMessage = document.getElementById("pasteImageMessage"); // This should be a div or span to show messages in
+
+    // Event listener for sort dropdown
+    document.getElementById("sort").addEventListener("change", loadAndFilterListings);
+
+    // Event listener for group filter radios
     document.querySelectorAll('input[name="group"]').forEach((radio) => {
-        radio.addEventListener("change", () => {
-            const selectedGroup = document.querySelector('input[name="group"]:checked').value;
-            const sortBy = document.getElementById("sort").value; // Get current sorting option
-    
-            fetch(`/listings?sort_by=${sortBy}`)
-                .then((response) => response.json())
-                .then((listings) => {
-                    listingsContainer.innerHTML = ""; // Clear existing listings
-                    listings
-                        .filter((listing) => selectedGroup === "none" || listing.group === selectedGroup) // Display all if "none" is selected
-                        .forEach((listing) => addListingCard(listing)); // Render filtered listings
-                })
-                .catch((error) => {
-                    console.error("Error loading filtered listings:", error);
-                });
-        });
+        radio.addEventListener("change", loadAndFilterListings);
     });
 
+    // Settings button toggle
     document.getElementById("settingsButton").addEventListener("click", () => {
         let settings = document.getElementById("settingsOverlay");
-        if(settings.classList.contains("visible")){
+        if (settings.classList.contains("visible")) {
             settings.classList.remove("visible");
-        }else{
+        } else {
             settings.classList.add("visible");
         }
     });
-    
+
+    // Settings form submission
     document.getElementById("settingsForm").addEventListener("submit", async (event) => {
         event.preventDefault();
-        
+
         const originAddress = document.getElementById("originAddress").value;
-        console.log(document.getElementById("distance_weight").value)
-        console.log(document.getElementById("rent_weight").value)
-        
-        const response = await fetch("/update_settings", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                address :originAddress,
-                rent:document.getElementById("rent_weight").value,
-                sqft: document.getElementById("sqft_weight").value,
-                beds:document.getElementById("bedrooms_weight").value,
-                baths:document.getElementById("bathrooms_weight").value,
-                dist: document.getElementById("distance_weight").value
-             })
-        });
-    
-        const result = await response.json();
-    
-        if (result.success) {
-            document.getElementById("settingsOverlay").classList.remove("visible");
-        } else {
-            alert("Failed to update settings.");
+        const rentWeight = parseFloat(document.getElementById("rent_weight").value);
+        const sqftWeight = parseFloat(document.getElementById("sqft_weight").value);
+        const bedsWeight = parseFloat(document.getElementById("bedrooms_weight").value);
+        const bathsWeight = parseFloat(document.getElementById("bathrooms_weight").value);
+        const distWeight = parseFloat(document.getElementById("distance_weight").value);
+
+        // Basic validation for weights
+        const totalWeight = rentWeight + sqftWeight + bedsWeight + bathsWeight + distWeight;
+        if (isNaN(totalWeight) || Math.abs(totalWeight - 1.0) > 0.01) { // Allow for small floating point inaccuracies
+            showMessage(document.getElementById("settingsForm"), "Weights must sum to approximately 1.0", true);
+            return;
+        }
+
+        try {
+            const response = await fetch("/update_settings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    address: originAddress,
+                    rent: rentWeight,
+                    sqft: sqftWeight,
+                    beds: bedsWeight,
+                    baths: bathsWeight,
+                    dist: distWeight
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showMessage(document.getElementById("settingsForm"), "Settings updated successfully!");
+                document.getElementById("settingsOverlay").classList.remove("visible");
+                loadAndFilterListings(); // Reload listings with new weights
+            } else {
+                showMessage(document.getElementById("settingsForm"), "Failed to update settings: " + result.error, true);
+            }
+        } catch (error) {
+            console.error("Error updating settings:", error);
+            showMessage(document.getElementById("settingsForm"), "Network error updating settings.", true);
         }
     });
 
-
-    const form = document.getElementById("addListingForm");
-    const listingsContainer = document.getElementById("listingsContainer");
-
-    // Handle form submission
-    form.addEventListener("submit", async (event) => {
+    // Handle automated listing submission
+    const automatedListingForm = document.getElementById("addListingForm");
+    automatedListingForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
-        const formData = new FormData(form);
-        const data = {
-            url: formData.get("url"),
-            roommates: parseInt(formData.get("roommates"), 10),
-            overall_rating: parseInt(formData.get("overall_rating"), 10),
-        };
+        const formData = new FormData(automatedListingForm);
+        const url = formData.get("url").trim();
+        // Retrieve utility_estimate from the automated form
+        let utilityEstimate = formData.get("utility_estimate"); 
+        let roommates = parseInt(formData.get("roommates"), 10);
+        const overallRating = parseInt(formData.get("overall_rating"), 10);
+
+        if (!url) {
+            showMessage(automatedListingForm, "Please enter a Zillow URL.", true);
+            return;
+        }
+
+        // --- Data sanitization for automated form ---
+        roommates = isNaN(roommates) || roommates < 0 ? 1 : roommates; // Default to 1 if invalid/empty
+        
+        // Handle utility_estimate from automated form
+        if (utilityEstimate === '' || utilityEstimate === null || utilityEstimate === undefined) {
+            utilityEstimate = null; // Send as null if blank
+        } else {
+            utilityEstimate = parseFloat(utilityEstimate);
+            if (isNaN(utilityEstimate)) {
+                utilityEstimate = null; // Send as null if not a valid number
+            }
+        }
+        // --- End data sanitization ---
+
+        if (overallRating < 1 || overallRating > 10) { // Check after parsing
+            showMessage(automatedListingForm, "Overall rating must be between 1 and 10.", true);
+            return;
+        }
+
+        showMessage(automatedListingForm, "Scraping listing... This may take a moment. The browser may open.", false);
 
         try {
             const response = await fetch("/add_listing", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(data),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url, roommates, overall_rating: overallRating, utility_estimate: utilityEstimate }),
             });
             const result = await response.json();
 
             if (result.success) {
-                addListingCard(result.listing);
+                showMessage(automatedListingForm, "Listing added successfully!");
+                automatedListingForm.reset(); // Clear form
+                loadAndFilterListings(); // Refresh the list
+            } else {
+                showMessage(automatedListingForm, "Failed to add listing: " + result.error, true);
             }
         } catch (error) {
             console.error("Error adding listing:", error);
+            showMessage(automatedListingForm, "Network error adding listing.", true);
         }
     });
 
-    function addListingCard(listing) {
-        const card = document.createElement("div");
-        card.className = "card";
-        card.id = listing.id;
+    // Handle manual HTML listing submission
+    addManualListingBtn.addEventListener("click", async () => {
+        const rawHtml = manualHtmlInput.value.trim();
+        const url = manualHtmlUrlInput.value.trim();
+        let roommates = parseInt(manualRoommatesInput.value, 10);
+        const overallRating = parseInt(manualOverallRatingInput.value, 10);
 
-        const contacted = document.createElement("div");
-        contacted.className = "green-check";
-        contacted.id = "contacted";
-        const contacted_label = document.createElement("label");
-        contacted_label.for="contact_check";
-        contacted_label.textContent = "Contacted";
-        contacted_label.style="margin-left:10px";
-        const contact_check = document.createElement("input");
-        contact_check.type = "checkbox";
-        contact_check.id="contact_check";
-        contact_check.addEventListener("change", async () => {contacted_action();});
-        contacted.appendChild(contact_check);
-        contacted.appendChild(contacted_label);
-        async function contacted_action(){
-            const response = await fetch("/contacted", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: listing.id, selected:contact_check.checked}),
-            });
-            const result = await response.json();
-            if(result.success && contact_check.checked)
-                {
-                    contacted.style = "background-color:#1b9458;"
-                }
-            else if(result.success && contact_check.checked==false)
-                {
-                    contacted.style = "background-color:none;"
-                }      
+        // Retrieve utility_estimate from the manual form
+        let manualUtilityEstimate = document.getElementById("manualUtilityEstimate").value; // Assuming ID for manual utilities input
+
+        if (!rawHtml) {
+            showMessage(manualInputContainer, "Please paste the full HTML content.", true);
+            return;
         }
-        if(listing.contacted){contact_check.checked = true;}
-        contacted_action();
-
-        const applied = document.createElement("div");
-        applied.className = "green-check";
-        applied.id = "applied";
-        const applied_label = document.createElement("label");
-        applied_label.for="applied_check";
-        applied_label.textContent = "Applied";
-        applied_label.style="margin-left:10px";
-        const applied_check = document.createElement("input");
-        applied_check.type = "checkbox";
-        applied_check.id="applied_check";
-        applied_check.addEventListener("change", async () =>{applied_action();});
-        applied.appendChild(applied_check);
-        applied.appendChild(applied_label);
-        async function applied_action(){
-            const response = await fetch("/applied", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: listing.id, selected:applied_check.checked}),
-            });
-            const result = await response.json();
-            if(result.success && applied_check.checked)
-                {
-                    applied.style = "background-color:#1b9458;"
-                }
-            else if(result.success && applied_check.checked==false)
-                {
-                    applied.style = "background-color:none;"
-                }      
+        if (!url) {
+            showMessage(manualInputContainer, "Please enter the original Zillow URL.", true);
+            return;
         }
-        if(listing.applied){applied_check.checked=true;}
-        applied_action();
-    
-        // Create edit button separately to ensure proper placement
-        const editButton = document.createElement("button");
-        editButton.className = "edit-button";
-        editButton.textContent = "Edit";
-    
-        editButton.addEventListener("click", () => {
-            editPopup.classList.remove("hidden");
-            console.log("editClick");
-            editListingForm.dataset.listingId = listing.id;
-            Object.keys(listing).forEach(key => {
-                const input = editListingForm.querySelector(`[name=${key}]`);
-                if (input) input.value = listing[key];
-            });
-        });
 
-        // Create delete button separately to ensure proper placement
-        const deleteButton = document.createElement("button");
-        deleteButton.className = "delete-button";
-        deleteButton.textContent = "Delete";
-    
-        deleteButton.addEventListener("click", async () => {
-            console.log("deleteClick");
-            const response = await fetch("/delete_listing", {
+        // --- Data sanitization for manual form ---
+        roommates = isNaN(roommates) || roommates < 0 ? 1 : roommates; // Default to 1 if invalid/empty
+        
+        // Handle manualUtilityEstimate
+        if (manualUtilityEstimate === '' || manualUtilityEstimate === null || manualUtilityEstimate === undefined) {
+            manualUtilityEstimate = null; // Send as null if blank
+        } else {
+            manualUtilityEstimate = parseFloat(manualUtilityEstimate);
+            if (isNaN(manualUtilityEstimate)) {
+                manualUtilityEstimate = null; // Send as null if not a valid number
+            }
+        }
+        // --- End data sanitization ---
+
+        if (overallRating < 1 || overallRating > 10) { // Check after parsing
+            showMessage(manualInputContainer, "Overall rating must be between 1 and 10.", true);
+            return;
+        }
+
+        showMessage(manualInputContainer, "Processing HTML... This may take a moment.", false);
+
+        try {
+            const response = await fetch("/add_listing_from_html", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: listing.id }),
+                body: JSON.stringify({ raw_html: rawHtml, url: url, roommates: roommates, overall_rating: overallRating, utility_estimate: manualUtilityEstimate }),
             });
             const result = await response.json();
+
             if (result.success) {
-                listingsContainer.removeChild(card);
+                showMessage(manualInputContainer, "Listing added from HTML successfully!");
+                manualHtmlInput.value = ""; // Clear input
+                manualHtmlUrlInput.value = ""; // Clear URL input
+                manualRoommatesInput.value = "1"; // Reset to default
+                manualOverallRatingInput.value = "5"; // Reset to default
+                document.getElementById("manualUtilityEstimate").value = ""; // Clear manual utility estimate
+                loadAndFilterListings(); // Refresh the list
+            } else {
+                showMessage(manualInputContainer, "Failed to add listing from HTML: " + result.error, true);
             }
-        });
+        } catch (error) {
+            console.error("Error adding listing from HTML:", error);
+            showMessage(manualInputContainer, "Network error adding listing from HTML.", true);
+        }
+    });
 
-        const buttonPanel = document.createElement("div");
-        buttonPanel.style="margin-top:15px;margin-bottom:5px;";
-        //buttonPanel.style="display:flex";
-        buttonPanel.appendChild(editButton);
-        buttonPanel.appendChild(deleteButton);
-    
-        // Append button first, then inner HTML
+    // Toggle manual input section visibility
+    toggleManualInputBtn.addEventListener("click", () => {
+        if (manualInputContent.style.display === "none" || manualInputContent.style.display === "") { // Check for initial state too
+            manualInputContent.style.display = "flex";
+            toggleManualInputBtn.textContent = "▼"; // Use down triangle for "Hide"
+        } else {
+            manualInputContent.style.display = "none";
+            toggleManualInputBtn.textContent = "▶"; // Use right triangle for "Show"
+        }
+    });
+
+    // Handle Save Button for Edit Popup
+    editListingForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(editListingForm);
         
-        card.innerHTML += `
-            <h3>${listing.address}</h3>
-            <img src="data:image/jpeg;base64,${listing.image}" alt="Listing Image" style="max-width: 100%; border-radius: 10px;">
-            <p><strong>Rent:</strong> $${listing.price}</p>
-            <p><strong>Square Footage:</strong> ${listing.square_footage || "N/A"} sqft</p>
-            <p><strong>Bedrooms:</strong> ${listing.bedrooms || "N/A"}</p>
-            <p><strong>Bathrooms:</strong> ${listing.bathrooms || "N/A"}</p>
-            <p><strong>Date Available:</strong> ${listing.date_available || "N/A"}</p>
-            <p><strong>Distance:</strong> ${listing.distance || "N/A"}</p>
-            <p><strong>Recommended Score: ${listing.score||"N/A"}%<p>
-            <p><strong>Your Rating:</strong> ${listing.overall_rating || "N/A"}</p>
-            <p><strong>Cost per Square Foot:</strong> $${listing.cost_per_sqft}</p>
-            <p><strong>Cost per Roommate:</strong> $${listing.cost_per_roommate}</p>
-            <p><a href="${listing.url}" class="hyperlink"> Link</a></p>
-        `;
-        card.appendChild(contacted);
-        card.appendChild(applied);
-        card.appendChild(buttonPanel);
-        card.dataset.group = listing.group || "none"; // Default group
-        
-        // Radio Selection for Group
-        const groupSelector = document.createElement("div");
-        ["none", "red", "blue", "green", "yellow", "purple"].forEach(color => {
-            const input = document.createElement("input");
-            input.type = "radio";
-            input.name = `group-${listing.id}`;
-            input.value = color;
-            input.className = `group-circle group-${color}`;
-            if (listing.group === color) input.checked = true;
-        
-                input.addEventListener("change", async () => {
-                    const response = await fetch("/update_group", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ id: listing.id, group: input.value }),
-                    });
-                    const result = await response.json();
-                    if (result.success) card.dataset.group = input.value;
-                });
-        
-                groupSelector.appendChild(input);
+        // Start with a base object for updated data
+        const updatedData = {
+            id: parseInt(formData.get("id"), 10),
+            address: formData.get("address"),
+            date_available: formData.get("date_available")
+        };
+
+        // --- Data sanitization for Edit Form ---
+        // Price
+        let price = formData.get("price");
+        if (price === '' || price === null || price === undefined) {
+            updatedData.price = null; // Or 0, depending on your backend's preference for 'no price'
+        } else {
+            updatedData.price = parseFloat(price);
+            if (isNaN(updatedData.price)) {
+                updatedData.price = null; // Send as null if not a valid number
+            }
+        }
+
+        // Square Footage
+        let sqft = formData.get("square_footage");
+        updatedData.square_footage = parseInt(sqft, 10);
+        if (isNaN(updatedData.square_footage) || updatedData.square_footage < 0) {
+            updatedData.square_footage = null; // Or 0, depending on preference
+        }
+
+        // Bedrooms
+        let bedrooms = formData.get("bedrooms");
+        updatedData.bedrooms = parseInt(bedrooms, 10);
+        if (isNaN(updatedData.bedrooms) || updatedData.bedrooms < 0) {
+            updatedData.bedrooms = null; // Or 0, depending on preference
+        }
+
+        // Bathrooms
+        let bathrooms = formData.get("bathrooms");
+        updatedData.bathrooms = parseFloat(bathrooms);
+        if (isNaN(updatedData.bathrooms) || updatedData.bathrooms < 0) {
+            updatedData.bathrooms = null; // Or 0, depending on preference
+        }
+
+        // Overall Rating
+        let overallRating = formData.get("overall_rating");
+        updatedData.overall_rating = parseInt(overallRating, 10);
+        if (isNaN(updatedData.overall_rating) || updatedData.overall_rating < 1 || updatedData.overall_rating > 10) {
+            updatedData.overall_rating = 5; // Default to 5 if invalid
+        }
+
+        // Roommates (Occupants)
+        let roommates = formData.get("roommates");
+        updatedData.roommates = parseInt(roommates, 10);
+        if (isNaN(updatedData.roommates) || updatedData.roommates < 0) {
+            updatedData.roommates = 1; // Default to 1 if invalid/empty
+        }
+
+        // Utility Estimate
+        let utilityEstimate = formData.get("utility_estimate");
+        if (utilityEstimate === '0' || utilityEstimate === null || utilityEstimate === undefined) {
+            updatedData.utility_estimate = null; // Send as null if blank
+        } else {
+            updatedData.utility_estimate = parseFloat(utilityEstimate);
+            if (isNaN(updatedData.utility_estimate)) {
+                updatedData.utility_estimate = null; // Send as null if not a valid number
+            }
+        }
+        // --- End data sanitization ---
+
+        if (isNaN(updatedData.id)) {
+            showMessage(editListingForm, "Error: Listing ID is missing.", true);
+            return;
+        }
+
+        try {
+            const response = await fetch("/edit_listing", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updatedData),
             });
-        
-        card.appendChild(groupSelector);
-        
-        // Handle Save Button
-        editListingForm.addEventListener("submit", async (event) => {
-            event.preventDefault();
 
-            // Get the stored listing ID from the dataset
-            const listingId = editListingForm.dataset.listingId;
-            if (!listingId) {
-                alert("Error: Listing ID is missing.");
-                return;
-            }
-            
-            // Convert form data to an object
-            const formData = new FormData(editListingForm);
-            const updatedData = Object.fromEntries(formData);
-
-            // Ensure the ID exists before making the request
-            if (!updatedData.id) {
-                alert("Error: Listing ID is required for saving.");
+            if (!response.ok) {
+                const errorData = await response.json();
+                showMessage(editListingForm, `Failed to save listing: ${errorData.error || response.statusText}`, true);
                 return;
             }
 
-            try {
-                const response = await fetch("/edit_listing", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(updatedData),
-                });
+            const result = await response.json();
 
-                if (!response.ok) {
-                    alert(`Failed to save listing. Server responded with status ${response.status}`);
-                    return;
-                }
+            if (result.success) {
+                showMessage(editListingForm, "Listing saved successfully!", false);
+                editPopup.classList.add("hidden");
+                loadAndFilterListings(); // Refresh the list to show updated values and scores
+            } else {
+                showMessage(editListingForm, "Error: Save operation failed: " + result.error, true);
+                editPopup.classList.add("hidden"); // Still hide on logical failure for now
+            }
+        } catch (error) {
+            console.error("Error saving listing:", error);
+            showMessage(editListingForm, "An unexpected error occurred during save. Check console for details.", true);
+        }
+    });
 
-                const result = await response.json();
+    // NEW EVENT LISTENER FOR PASTE IMAGE BUTTON
+    pasteImageBtn.addEventListener("click", async () => {
+        const listingId = editListingForm.dataset.listingId;
+        if (!listingId) {
+            showMessage(pasteImageMessage, "Please select a listing to edit first.", true);
+            return;
+        }
 
-                if (result.success) {
-                    // Update existing card HTML
-                    const card = document.getElementById(updatedData.id.toString());
-                    if (card) {
-                        const paragraphs = card.querySelectorAll("p");
-                        
-                        paragraphs[0].innerHTML = `<strong>Rent:</strong> $${result.listing.price}`;
-                        paragraphs[1].innerHTML = `<strong>Square Footage:</strong> ${result.listing.square_footage || "N/A"} sqft`;
-                        paragraphs[2].innerHTML = `<strong>Bedrooms:</strong> ${result.listing.bedrooms || "N/A"}`;
-                        paragraphs[3].innerHTML = `<strong>Bathrooms:</strong> ${result.listing.bathrooms || "N/A"}`;
-                        paragraphs[4].innerHTML = `<strong>Date Available:</strong> ${result.listing.date_available || "N/A"}`;
-                        paragraphs[5].innerHTML = `<strong>Distance:</strong> ${result.listing.distance || "N/A"}`;
-                        paragraphs[6].innerHTML = `<strong>Your Rating:</strong> ${result.listing.overall_rating || "N/A"}`;
-                        paragraphs[7].innerHTML = `<strong>Cost per Square Foot:</strong> $${result.listing.cost_per_sqft}`;
-                        paragraphs[8].innerHTML = `<strong>Cost per Roommate:</strong> $${result.listing.cost_per_roommate}`;
+        pasteImageMessage.textContent = "Attempting to paste image...";
+        pasteImageMessage.style.color = "orange";
+        pasteImageMessage.style.display = "block";
+
+        try {
+            const clipboardItems = await navigator.clipboard.read();
+            let imageFound = false;
+
+            for (const item of clipboardItems) {
+                // Check for common image MIME types
+                if (item.types.includes("image/png") || item.types.includes("image/jpeg") || item.types.includes("image/gif")) {
+                    const mimeType = item.types.includes("image/png") ? "image/png" :
+                                     item.types.includes("image/jpeg") ? "image/jpeg" :
+                                     item.types.includes("image/gif") ? "image/gif" : null;
+
+                    if (!mimeType) { // Should not happen if one of the above is true
+                        continue;
                     }
-        
 
-                    editPopup.classList.add("hidden");
-                } else {
-                    alert("Error: Save operation failed.");
-                    editPopup.classList.add("hidden");
+                    const blob = await item.getType(mimeType);
+
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        // reader.result is already the full Data URL (e.g., "data:image/png;base64,...")
+                        const fullDataUri = reader.result;
+
+                        try {
+                            const response = await fetch("/edit_listing", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    id: parseInt(listingId),
+                                    new_image_base64: fullDataUri // Send the FULL Data URI
+                                }),
+                            });
+                            const result = await response.json();
+
+                            if (result.success) {
+                                showMessage(pasteImageMessage, "Image pasted and saved successfully!");
+                                loadAndFilterListings(); // Refresh the list to show updated images
+                            } else {
+                                showMessage(pasteImageMessage, "Failed to save image: " + result.error, true);
+                            }
+                        } catch (error) {
+                            console.error("Error sending image to backend:", error);
+                            showMessage(pasteImageMessage, "Network error saving image.", true);
+                        }
+                    };
+                    reader.readAsDataURL(blob); // Convert Blob to Data URL
+                    imageFound = true;
+                    break; // Process only the first image found
                 }
-            } catch (error) {
-                alert("An unexpected error occurred.");
             }
-        });
 
-        listingsContainer.appendChild(card);
+            if (!imageFound) {
+                showMessage(pasteImageMessage, "No image found in clipboard. Please copy an image first.", true);
+            }
+
+        } catch (error) {
+            console.error("Error reading clipboard:", error);
+            // Provide user-friendly message for clipboard permission issues
+            if (error.name === "NotAllowedError" || error.name === "SecurityError") {
+                showMessage(pasteImageMessage, "Permission denied to access clipboard. Please ensure your browser allows clipboard access for this site.", true);
+            } else {
+                showMessage(pasteImageMessage, "Error accessing clipboard. Please try again.", true);
+            }
+        }
+    });
+    // END NEW IMAGE PASTE LISTENER
+
+    // Function to load and display listings with current sort and filter
+    async function loadAndFilterListings() {
+        const sortBy = document.getElementById("sort").value;
+        const selectedGroup = document.querySelector('input[name="group"]:checked').value;
+    
+        // Get a reference to listingsContainer (it's already done at the top, but good to ensure scope)
+        const listingsContainer = document.getElementById("listingsContainer"); // Make sure this is accessible
+    
+        try {
+            const response = await fetch(`/listings?sort_by=${sortBy}`);
+            const listings = await response.json();
+        
+            listingsContainer.innerHTML = ""; // Clear existing content
+        
+            const filteredListings = listings.filter(
+                (listing) => selectedGroup === "none" || listing.group === selectedGroup
+            );
+        
+            if (filteredListings.length === 0) {
+                listingsContainer.innerHTML = "<p>No listings found for the selected criteria.</p>";
+            } else {
+                filteredListings.forEach((listing) => {
+                    const cardElement = createListingCard(listing); // Get the returned HTML element
+                    listingsContainer.appendChild(cardElement); // <--- THIS IS THE MISSING LINE
+                });
+            }
+        } catch (error) {
+            console.error("Error loading listings:", error);
+            listingsContainer.innerHTML = '<p style="color: red;">Error loading listings.</p>';
+        }
     }
-    loadListings();
+
+
+    // Initial state setup (important for the first load)
+    // Set the initial button text based on the default display:none
+    toggleManualInputBtn.textContent = "▶";
+
+    // Initial load of listings when the page loads
+    loadAndFilterListings();
 });
