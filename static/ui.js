@@ -35,11 +35,6 @@ function createListingCard(listing) {
     card.className = "card"; // Original class name
     card.id = listing.id;
 
-    // Display the first image if available, otherwise use placeholder
-    const imageUrl = (listing.image && listing.image.length > 0)
-        ? listing.image[0] // Use the full Data URI directly
-        : 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2U2ZTZlNiIvPjxwYXRoIGQ9Ik0zMCAxMGgzNnAzIDIgMCAwaDI1cDIgMyAwIDh-OTZsLTE0LTE0djkyaC02NnptLTUgNjBsLTE3LTI2IDIyLTIzIDQ3IDQ4eiIgZmlsbD0iI2ZmZiIvPjx0ZXh0IHg9IjUwIiB5PSI1NSIgZm9udC1mYW1pbHk9IlNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTBweCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzY2NiI-Tm8gSW1hZ2U8L3RleHQ-PC9zdmc-'; // Placeholder SVG
-
     // --- Safely parse numeric values for display and calculation ---
     const rentValue = parseFloat(listing.price) || 0; // Default to 0 if parsing fails or price is null/undefined
     const utilityValue = parseFloat(listing.utility_estimate) || 0; // Default to 0 if parsing fails or utility_estimate is null/undefined
@@ -56,8 +51,6 @@ function createListingCard(listing) {
 
 
     card.innerHTML = `
-        <h3>${listing.address}</h3>
-        <img src="${imageUrl}" alt="Listing Image" style="max-width: 100%; border-radius: 10px;">
         <p><strong>Rent:</strong> $${listing.price || "N/A"}</p>
         <p><strong>Estimated Utilities:</strong> $${listing.utility_estimate !== null && listing.utility_estimate !== undefined ? listing.utility_estimate : "0"}</p>
         <p><strong>Square Footage:</strong> ${listing.square_footage || "N/A"} sqft</p>
@@ -72,6 +65,27 @@ function createListingCard(listing) {
         <p><strong>Cost per Occupant:</strong> $${rentValue.toFixed(2)} rent + $${utilityValue.toFixed(2)} util = $${totalCostPerOccupant} </p>
         <p><a href="${listing.url}" class="hyperlink" target="_blank">Link to Zillow</a></p>
     `;
+
+    const imageElement = document.createElement("img");
+    imageElement.setAttribute("index", 0);
+    imageElement.src=listing.image[0];
+    imageElement.alt = "Listing Image";
+    imageElement.style = "max-width: 100%; border-radius: 10px;";
+    imageElement.addEventListener("click", () =>
+    {
+        if(listing.image.length >1)
+        {
+            var index = imageElement.getAttribute("index");
+            index = (index == listing.image.length - 1) ? 0 : parseInt(index + 1);
+            imageElement.src=listing.image[index];
+            imageElement.setAttribute("index", index);
+        }
+    });
+    card.prepend(imageElement);
+
+    const title = document.createElement("h3");
+    title.innerHTML = `<h3>${listing.address}</h3>`;
+    card.prepend(title);
 
     // Checkbox for Contacted
     const contactedDiv = document.createElement("div");
@@ -232,6 +246,7 @@ function createListingCard(listing) {
 
     //Comments Section
     const commentSection = document.createElement("textarea");
+    commentSection.style="magrin:8px;";
     commentSection.rows = 4;
     commentSection.cols = 40;
     commentSection.value = listing.comments || ''; // Populate comments

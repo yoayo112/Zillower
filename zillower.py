@@ -5,6 +5,7 @@
 from flask import Flask, request, jsonify, render_template
 from bs4 import BeautifulSoup
 from datetime import datetime
+import os
 
 # Import functions and configurations from other modules
 import utils # For data loading, saving, scoring, scraping, etc.
@@ -436,6 +437,45 @@ def update_comment():
         return jsonify({"success": True, "message": "Comment updated successfully."})
     else:
         return jsonify({"success": False, "error": "Listing not found."}), 404
+
+# -- save the spiel to a .txt
+@app.route('/save_spiel', methods=['POST'])
+def save_spiel():
+    """
+    Receives a 'spiel' string from the frontend and saves it to 'application-spiel.txt'.
+    """
+    data = request.get_json()
+    spiel_string = data.get('spiel')
+
+    if spiel_string is None:
+        return jsonify({"success": False, "error": "No 'spiel' string provided."}), 400
+
+    file_path = "application-spiel.txt"
+    try:
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(spiel_string)
+        return jsonify({"success": True, "message": f"Application spiel saved to {file_path}"})
+    except IOError as e:
+        # Log the error for debugging on the server side
+        print(f"Error saving spiel to file: {e}")
+        return jsonify({"success": False, "error": f"Failed to save application spiel: {str(e)}"}), 500
+
+@app.route('/get_spiel_content', methods=['GET'])
+def get_spiel_content():
+    """
+    Reads the content of 'application-spiel.txt' and returns it.
+    Returns an empty string if the file doesn't exist or is empty.
+    """
+    file_path = "application-spiel.txt"
+    spiel_content = ""
+    try:
+        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                spiel_content = f.read()
+        return jsonify({"success": True, "spiel": spiel_content})
+    except IOError as e:
+        print(f"Error reading spiel file: {e}")
+        return jsonify({"success": False, "error": f"Failed to read spiel file: {str(e)}"}), 500
 
 
 # --- Application Entry Point ---

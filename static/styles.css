@@ -117,6 +117,14 @@ hr {
     background: linear-gradient(to right, transparent, rgba(159, 197, 233, 0.507), transparent);
     margin: 20px 0;
 }
+
+textarea{
+    margin-top: 12px;
+    border-radius: 1px;
+    background-color: #cfe5f02f;
+    color: white;
+}
+
 /* Styled Select Dropdown */
 select {
     width: 90%;
@@ -197,7 +205,15 @@ button:hover {
 }
 
 .card:hover {
-    transform: scale(1.2);
+    transform: scale(1.15,1.1);
+}
+
+img{
+    transition: transform 0.1s ease-in-out;
+}
+
+img:hover {
+    transform: scale(2);
 }
 
 .green-check {

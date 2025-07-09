@@ -19,6 +19,40 @@ document.addEventListener("DOMContentLoaded", () => {
     const toggleManualInputBtn = document.getElementById("toggleManualInput");
     const manualInputContent = document.getElementById("manualInputContent");
     const manualInputContainer = document.getElementById('manualInputContainer'); // Added for showMessage
+    const toggleAutoInputBtn = document.getElementById("toggleAutoInput");
+    const autoInputContent = document.getElementById("addListingForm");
+
+    //event listener for typed spiel
+    document.getElementById("spiel").addEventListener("blur", async (event) =>{
+        const text = document.getElementById("spiel").value;
+        console.log(text);
+        const response = await fetch("/save_spiel", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    spiel:text
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showMessage(document.getElementById("spielbox"), "Saved Speil!", false);
+            } else {
+                console.log("shit");
+                showMessage(document.getElementById("spielbox"), "Couldnt save speil. "+ result.error, true);
+            }
+    });
+    document.getElementById("spiel").addEventListener("focus", ()=>{
+        const text = document.getElementById("spiel").value;
+        navigator.clipboard.writeText(text)
+        .then(() => {
+            showMessage(document.getElementById("spielbox"), "Copied to clipboard.", false);
+        }).catch(err => {
+            showMessage(document.getElementById("spielbox"), "Failed to copy.", true);
+        });
+    });
+
 
     // NEW Image Paste Elements
     const pasteImageBtn = document.getElementById("pasteImageBtn");
@@ -221,6 +255,16 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             manualInputContent.style.display = "none";
             toggleManualInputBtn.textContent = "▶"; // Use right triangle for "Show"
+        }
+    });
+    // and for auto
+    toggleAutoInputBtn.addEventListener("click", () => {
+        if (autoInputContent.style.display === "none" || autoInputContent.style.display === "") { // Check for initial state too
+            autoInputContent.style.display = "flex";
+            toggleAutoInputBtn.textContent = "▼"; // Use down triangle for "Hide"
+        } else {
+            autoInputContent.style.display = "none";
+            toggleAutoInputBtn.textContent = "▶"; // Use right triangle for "Show"
         }
     });
 
@@ -440,11 +484,42 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    async function loadSpiel()
+    {
+        try {
+            const response = await fetch('/get_spiel_content', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                console.error(`HTTP error! status: ${response.status}`);
+                return ''; // Return empty string on HTTP error
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                // The server sends an empty string if the file is empty or doesn't exist
+                return result.spiel || ''; 
+            } else {
+                console.error("Server reported error fetching spiel:", result.error);
+                return ''; // Return empty string on server-side logical error
+            }
+        } catch (error) {
+            console.error("Network or parsing error fetching spiel:", error);
+            return ''; // Return empty string on network/parsing error
+        }
+    }
 
     // Initial state setup (important for the first load)
     // Set the initial button text based on the default display:none
     toggleManualInputBtn.textContent = "▶";
+    toggleAutoInputBtn.textContent = "▼";
 
     // Initial load of listings when the page loads
     loadAndFilterListings();
+    loadSpiel();
 });

@@ -20,7 +20,9 @@
     </button>
 
     <div class="input-container">
-        <h2>Add New Listing (Automated Scrape)</h2>
+        <h2>Add New Listing (Automated Scrape) 
+            <button id="toggleAutoInput" class="toggle-button">▶</button>
+        </h2>
         <form id="addListingForm">
             <label for="url">Zillow URL:</label>
             <input type="text" id="url" name="url" placeholder="Enter Zillow URL" required>
@@ -67,6 +69,11 @@
         </div>
     </div>
 
+    <div id = "spielbox">
+        <textarea id="spiel" placeholder="Application Spiel..." rows="4" cols = "150" style="margin:10px;"></textarea>
+        <div class="message"></div>
+    </div>
+    
     <div class="input-container">
         <label>Sort By:
             <select id="sort">
