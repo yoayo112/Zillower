@@ -58,7 +58,7 @@ function createListingCard(listing) {
         <p><strong>Bathrooms:</strong> ${listing.bathrooms || "N/A"}</p>
         <p><strong>Date Available:</strong> ${listing.date_available || "N/A"}</p>
         <p><strong>Distance:</strong> ${listing.distance !== null && listing.distance !== undefined ? (listing.distance) : "N/A"}</p>
-        <p><strong>Recommended Score:</strong> ${typeof listing.score === 'number' ? (listing.score.toFixed(2) *100 + "%"): "N/A"}</p>
+        <p><strong>Recommended Score:</strong> ${typeof listing.score === 'number' ? ((listing.score *100 ).toFixed(1)+ "%"): "N/A"}</p>
         <p><strong>Your Rating:</strong> ${listing.overall_rating || "N/A"}</p>
         <p><strong>Cost per Square Foot:</strong> $${listing.cost_per_sqft || "N/A"}</p>
         <p><strong>Occupants:</strong> ${listing.roommates !== undefined && listing.roommates !== null ? listing.roommates : "N/A"}</p>
@@ -75,7 +75,7 @@ function createListingCard(listing) {
     {
         if(listing.image.length >1)
         {
-            var index = imageElement.getAttribute("index");
+            var index = parseInt(imageElement.getAttribute("index"));
             index = (index == listing.image.length - 1) ? 0 : parseInt(index + 1);
             imageElement.src=listing.image[index];
             imageElement.setAttribute("index", index);

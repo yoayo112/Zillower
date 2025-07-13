@@ -49,18 +49,19 @@ def home():
 def update_settings():
     """Updates the origin address and score weights."""
     data = request.json
+    print(data)
     address = data.get("address")
 
     if address:
         config.ORIGIN_ADDRESS = address # Update the global in config.py
         
         # Update score weights in config.py
-        # Ensure these keys match the frontend settings form
-        config.SCORE_WEIGHTS["rent"] = float(data.get("rent_weight"))
-        config.SCORE_WEIGHTS["sqft"] = float(data.get("sqft_weight"))
-        config.SCORE_WEIGHTS["bedrooms"] = float(data.get("bedrooms_weight"))
-        config.SCORE_WEIGHTS["bathrooms"] = float(data.get("bathrooms_weight"))
-        config.SCORE_WEIGHTS["distance"] = float(data.get("distance_weight"))
+        # Ensure these keys match the frontend settings for
+        config.SCORE_WEIGHTS["rent"] = float(data.get("rent"))
+        config.SCORE_WEIGHTS["sqft"] = float(data.get("sqft"))
+        config.SCORE_WEIGHTS["bedrooms"] = float(data.get("beds"))
+        config.SCORE_WEIGHTS["bathrooms"] = float(data.get("baths"))
+        config.SCORE_WEIGHTS["distance"] = float(data.get("dist"))
         
         global listings
         listings = utils.load_listings() # Re-load to ensure the latest state before re-scoring

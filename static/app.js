@@ -87,6 +87,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const bathsWeight = parseFloat(document.getElementById("bathrooms_weight").value);
         const distWeight = parseFloat(document.getElementById("distance_weight").value);
 
+        console.log(originAddress);
+
         // Basic validation for weights
         const totalWeight = rentWeight + sqftWeight + bedsWeight + bathsWeight + distWeight;
         if (isNaN(totalWeight) || Math.abs(totalWeight - 1.0) > 0.01) { // Allow for small floating point inaccuracies
@@ -503,6 +505,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (result.success) {
                 // The server sends an empty string if the file is empty or doesn't exist
+                document.getElementById("spiel").value = result.spiel;
                 return result.spiel || ''; 
             } else {
                 console.error("Server reported error fetching spiel:", result.error);

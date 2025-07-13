@@ -289,6 +289,7 @@ def _parse_zillow_html(soup, url):
                 if item.get('@type') in ['Product', 'Residence', 'House', 'RealEstateListing']:
                     # Extract price
                     price_offer = item.get('offers', {}).get('price')
+                    print(f" PRICE ___ ${price_offer}")
                     listing_data['price'] = float(price_offer) if price_offer else None
 
                     # Extract address
@@ -335,28 +336,43 @@ def _parse_zillow_html(soup, url):
                     # If we found sufficient data, break the loop
                     if listing_data.get('address') and listing_data.get('price'):
                         break
-
         except json.JSONDecodeError as e:
             print(f"Error parsing JSON-LD script: {e}")
         except Exception as e:
             print(f"Unexpected error processing JSON-LD: {e}")
 
     # Fallback to direct HTML parsing if JSON-LD fails or is incomplete
+    # Price element attempt 1.
     if listing_data.get('price') is None:
-        price_element = soup.find("span", class_="Text-c11n-8-109-3__sc-aiai24-0 sc-lknQiW knxFxJ jMCwlu")
-        if price_element:
-            inner_price_element = price_element.find("span")
-            if inner_price_element:
-                try:
-                    price_text = inner_price_element.text.strip().replace("/mo", "")
-                    match = re.search(r'(\d[\d,.]*\d|\d+)', price_text)
-                    if match:
-                        listing_data['price'] = float(match.group(1).replace(",", ""))
-                    else:
-                        listing_data['price'] = None
-                except ValueError:
-                    listing_data['price'] = None
+        #price_element = soup.find("span", class_="Text-c11n-8-109-3__sc-aiai24-0 sc-lknQiW knxFxJ jMCwlu")
+        # Attempt 2
+      #if not price_element:
+      #    price_element = soup.find("span", class_="Text-c11n-8-109-3__sc-aiai24-0 WduMe").parent
 
+        # Attempt 3
+        inner_span = soup.find('span', class_=['Text-c11n-8-109-3__sc-aiai24-0', 'WduMe'], text="/mo")
+        if inner_span:
+            # Get the parent of this inner span, which is our target outer span
+            outer_span = inner_span.parent
+        
+            # Get only the direct text content of the outer_span
+            # .contents gives you a list of children (tags and NavigableString objects)
+            # Filter for NavigableString (text) and join them
+            direct_text_parts = [
+                str(content) for content in outer_span.contents
+                if isinstance(content, str) and content.strip()
+            ]
+            price_text = "".join(direct_text_parts).strip()
+        
+            print(f"Extracted price: {price_text}") # Output: Extracted price: $1,100
+            match = re.search(r'(\d[\d,.]*\d|\d+)', price_text)
+            if match:
+                listing_data['price'] = float(match.group(1).replace(",", ""))
+            else:
+                listing_data['price'] = None
+        else:
+            print("Inner span not found.")
+        
     if not listing_data.get('address'):
         address_element_h2 = soup.find("h2", {"data-test-id": "bdp-building-address"})
         if address_element_h2:
@@ -382,18 +398,27 @@ def _parse_zillow_html(soup, url):
                 listing_data['bathrooms'] = float(re.search(r'\d+(\.\d+)?', baths_text).group(0)) if re.search(r'\d+(\.\d+)?', baths_text) else -1
             except (AttributeError, ValueError):
                 listing_data['bathrooms'] = -1
-
+    
+    # Attempt 1 sq ft
+    #if listing_data.get('square_footage', -1) < 0:
+     #   sqft_element = soup.find("span", string=lambda s: s and "sqft" in s.lower())
+    # Attempt 2 sq ft
     if listing_data.get('square_footage', -1) < 0:
-        sqft_element = soup.find("span", string=lambda s: s and "sqft" in s.lower())
+        sqft_element = soup.find_all("span", class_="Text-c11n-8-109-3__sc-aiai24-0 styles__StyledValueText-fshdp-8-106-0__sc-12ivusx-1 cEHZrB bfIPme --medium")[2]
         if sqft_element:
+            listing_data['square_footage']=sqft_element.text
+            print(f"sqft ___ {sqft_element.text}")
             try:
                 sqft_text = sqft_element.find_previous("span").text.strip().replace(",", "")
                 listing_data['square_footage'] = int(re.search(r'\d+', sqft_text).group(0)) if re.search(r'\d+', sqft_text) else -1
             except (AttributeError, ValueError):
                 listing_data['square_footage'] = -1
-
+    # Date Attempt 1
     if not listing_data.get('date_available'):
         date_available_element = soup.find("div", string=lambda s: s and "available" in s.lower())
+    # Date Attempt 2
+    if not listing_data.get('date_available'):
+        date_available_element = soup.find("span", class_="Text-c11n-8-109-3__sc-aiai24-0 hdp__sc-1hoxd7t-2 cEHZrB iWQNvU")
         listing_data['date_available'] = date_available_element.text.strip() if date_available_element else "Not Listed"
 
     if not listing_data.get('image_url_for_fetch'):
