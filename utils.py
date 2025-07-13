@@ -406,13 +406,10 @@ def _parse_zillow_html(soup, url):
     if listing_data.get('square_footage', -1) < 0:
         sqft_element = soup.find_all("span", class_="Text-c11n-8-109-3__sc-aiai24-0 styles__StyledValueText-fshdp-8-106-0__sc-12ivusx-1 cEHZrB bfIPme --medium")[2]
         if sqft_element:
-            listing_data['square_footage']=sqft_element.text
+            listing_data['square_footage']=float(sqft_element.text)
             print(f"sqft ___ {sqft_element.text}")
-            try:
-                sqft_text = sqft_element.find_previous("span").text.strip().replace(",", "")
-                listing_data['square_footage'] = int(re.search(r'\d+', sqft_text).group(0)) if re.search(r'\d+', sqft_text) else -1
-            except (AttributeError, ValueError):
-                listing_data['square_footage'] = -1
+        else:
+            listing_data['square_footage']=-1
     # Date Attempt 1
     if not listing_data.get('date_available'):
         date_available_element = soup.find("div", string=lambda s: s and "available" in s.lower())
